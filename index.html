@@ -221,12 +221,14 @@ button:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
     <div class="seg" id="order-seg">
       <button data-v="seq" class="on">順番どおり</button>
       <button data-v="rand">ランダム</button>
+      <button data-v="weak">弱点優先</button>
     </div>
 
     <div class="sec-label">絞り込み</div>
     <div class="seg" id="filter-seg">
       <button data-v="all" class="on">すべて</button>
       <button data-v="wrong">前回×</button>
+      <button data-v="weakstreak">連続で×</button>
       <button data-v="unanswered">未解答</button>
       <button data-v="marked">チェック済</button>
     </div>
@@ -451,6 +453,16 @@ function renderChapters(){
 }
 function toggleSec(sid){const st=subjState[S[curSi].n];st.secs.has(sid)?st.secs.delete(sid):st.secs.add(sid)}
 
+function weakStreak(p){
+  if(!p||!p.hist||!p.hist.length)return 0;
+  let n=0;
+  for(let i=p.hist.length-1;i>=0;i--){if(p.hist[i]===0)n++;else break}
+  return n;
+}
+function weakScore(p){
+  if(!p||!(p.o||p.x))return 0.4; // 未解答は中間程度の優先度にしておく
+  return p.x/(p.o+p.x);
+}
 function buildPool(){
   const si=curSi,subj=S[si],st=subjState[subj.n];
   let pool=[];
@@ -462,6 +474,7 @@ function buildPool(){
       if(subj.rank && Q[k].i>=0 && !st.imps[Q[k].i])continue;
       const p=prog[k];
       if(st.filter==="wrong"&&!(p&&p.last==="x"))continue;
+      if(st.filter==="weakstreak"&&weakStreak(p)<2)continue;
       if(st.filter==="unanswered"&&p&&(p.o||p.x))continue;
       if(st.filter==="marked"&&!(p&&p.mk))continue;
       pool.push(k);
@@ -469,6 +482,7 @@ function buildPool(){
   });
   pool.sort((a,b)=>a-b);
   if(st.order==="rand")shuffle(pool);
+  else if(st.order==="weak")pool.sort((a,b)=>weakScore(prog[b])-weakScore(prog[a]));
   if(st.limit!=="all")pool=pool.slice(0,st.limit);
   return pool;
 }
@@ -518,8 +532,11 @@ function stampSVG(ok){return ok?`<svg viewBox="0 0 100 100"><circle class="draw1
 function answer(ans){
   if(answered)return;answered=true;
   const qid=pool[pos],q=Q[qid];const correct=ans===q.v;
-  const p=prog[qid]||(prog[qid]={o:0,x:0,last:"",mk:0});
-  correct?p.o++:p.x++;p.last=correct?"o":"x";saveProg();
+  const p=prog[qid]||(prog[qid]={o:0,x:0,last:"",mk:0,hist:[]});
+  if(!p.hist)p.hist=[];
+  correct?p.o++:p.x++;p.last=correct?"o":"x";
+  p.hist.push(correct?1:0);if(p.hist.length>8)p.hist.shift();
+  saveProg();
   session.push({qid,correct});
   $("stamp").innerHTML=stampSVG(correct);$("stamp").classList.add("show");
   $("fb-judge").className="fb-judge "+(correct?"ok":"ng");
@@ -564,7 +581,7 @@ $("btn-o").onclick=()=>answer(1);
 $("btn-x").onclick=()=>answer(0);
 $("next-btn").onclick=next;
 $("quit-btn").onclick=()=>{if(session.length){renderResult();show("scr-result")}else{curSi=poolSi;openSubject(curSi)}};
-$("mark-btn").onclick=()=>{const qid=pool[pos];const p=prog[qid]||(prog[qid]={o:0,x:0,last:"",mk:0});p.mk=p.mk?0:1;$("mark-btn").classList.toggle("on",!!p.mk);saveProg()};
+$("mark-btn").onclick=()=>{const qid=pool[pos];const p=prog[qid]||(prog[qid]={o:0,x:0,last:"",mk:0,hist:[]});p.mk=p.mk?0:1;$("mark-btn").classList.toggle("on",!!p.mk);saveProg()};
 $("r-retry-wrong").onclick=()=>{curSi=poolSi;startQuiz(session.filter(s=>!s.correct).map(s=>s.qid))};
 $("r-retry-same").onclick=()=>{curSi=poolSi;startQuiz(buildPool())};
 $("r-home").onclick=()=>{renderHome();show("scr-home")};
