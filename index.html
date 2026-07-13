@@ -197,6 +197,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
 #plan-scope .chip.subj{color:#fff;border:none}
 #plan-scope .chip.auto{border-color:var(--ok);color:var(--ok)}
 #plan-scope .chip.est{font-variant-numeric:tabular-nums}
+#plan-scope .chip.est small{opacity:.75;font-size:9.5px;margin-left:1px}
 #plan-scope .chip.over{border-color:var(--shu);color:var(--shu)}
 #plan-scope .note{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:12px}
 #plan-scope .note b{color:var(--ink)}
@@ -550,7 +551,8 @@ let weekDayOpen=new Set();
 function simulate(){
   // 各トラックの残タスクを今日から分単位で流し込む。
   // 長いタスクは複数日に跨り、startD〜finDの期間を持つ。
-  const startD={}, finD={}, finish={};
+  // dayMin[taskId][date] = その日に割り当てられた分数（表示の目安と合算が一致するように）
+  const startD={}, finD={}, finish={}, dayMin={};
   TRACK_ORDER.forEach(tr=>{
     const rem=remaining(tr);
     if(!rem.length){ finish[tr]=tStr; return }
@@ -563,15 +565,22 @@ function simulate(){
       if(guard>=1200){ broke=true; break }
       let need=t.m;
       startD[t.id]=fmtD(d);
-      while(need>avail){ need-=avail; advance(); if(guard>=1200){broke=true;break} }
+      dayMin[t.id]={};
+      while(need>avail){
+        const used=avail, ds2=fmtD(d);
+        dayMin[t.id][ds2]=(dayMin[t.id][ds2]||0)+used;
+        need-=used; advance(); if(guard>=1200){broke=true;break}
+      }
       if(broke) break;
+      const ds2=fmtD(d);
+      dayMin[t.id][ds2]=(dayMin[t.id][ds2]||0)+need;
       avail-=need;
       finD[t.id]=fmtD(d);
       if(avail<=0) advance();
     }
     finish[tr]= broke? null : (finD[rem[rem.length-1].id] || null);
   });
-  return {startD, finD, finish};
+  return {startD, finD, finish, dayMin};
 }
 
 /* ---------- 描画: ヘッダ ---------- */
@@ -588,8 +597,10 @@ function renderHead(){
 /* ---------- 描画: 今日 ---------- */
 function taskCard(t, opts={}){
   const done=isDone(t), auto=isAuto(t);
-  const chips=[`<span class="chip subj" style="background:${SUBJ_COLOR[t.s]}">${t.s}</span>`,
-               `<span class="chip est">約${t.m}分</span>`];
+  const estChip = (opts.todayMin && opts.todayMin < t.m - 0.5)
+    ? `<span class="chip est">今日は約${Math.round(opts.todayMin)}分<small>（全体約${Math.round(t.m)}分）</small></span>`
+    : `<span class="chip est">約${Math.round(t.m)}分</span>`;
+  const chips=[`<span class="chip subj" style="background:${SUBJ_COLOR[t.s]}">${t.s}</span>`, estChip];
   if(auto) chips.push(`<span class="chip auto">アプリ連動で完了</span>`);
   if(opts.overdue) chips.push(`<span class="chip over">繰越</span>`);
   return `<div class="task ${done?"done":""}" data-id="${t.id}" style="--sc:${SUBJ_COLOR[t.s]}">
@@ -625,7 +636,8 @@ function renderToday(){
     html+=`<div class="note mock"><b>答練復習（約2時間）</b>　昨日の答練の×を科目別に潰す。理論の×はアプリの該当章へ、計算の×はテキストの該当節へ。今日の理論ノルマは2時間分軽くしてあります。</div>`;
   }
 
-  const {startD,finD}=simulate();
+  const {startD,finD,dayMin}=simulate();
+  function minOn(t,ds){ return (dayMin[t.id]&&dayMin[t.id][ds])||t.m }
   const isSun=parseD(tStr).getDay()===0;
 
   // ── 今週の予定（月〜土）──
@@ -650,7 +662,7 @@ function renderToday(){
         label="予定なし";
       }else if(dayOpen){
         label=`<div class="wday-full">${names.map(t=>
-          `<div class="wi"><b style="color:${SUBJ_COLOR[t.s]}">${t.s}</b><span class="nm ${isDone(t)?"done":""}">${t.l}</span><span class="em">${Math.round(t.m)}分</span></div>`
+          `<div class="wi"><b style="color:${SUBJ_COLOR[t.s]}">${t.s}</b><span class="nm ${isDone(t)?"done":""}">${t.l}</span><span class="em">${Math.round(minOn(t,ds))}分</span></div>`
         ).join("")}
         ${names.length>4?`<button class="wday-less" data-day-toggle="${ds}">▲ たたむ</button>`:""}</div>`;
       }else{
@@ -692,7 +704,7 @@ function renderToday(){
       html+=`<div class="sec-label">${TRACK_NAME[tr]}<span class="mins">目安 ${bud}分</span></div>`;
       const list=[...doneToday, ...todays.filter(t=>!doneToday.includes(t))];
       if(!list.length){ html+=`<div class="empty">このトラックは完了、または今日の分なし</div>`; }
-      list.forEach(t=>{ html+=taskCard(t) });
+      list.forEach(t=>{ html+=taskCard(t,{todayMin:minOn(t,tStr)}) });
     });
   }
   html+=`<p class="foot-note">丸いチェックをタップで完了／解除。理論タスクは○×アプリの解答履歴から自動判定（範囲の9割を解くと完了）。<br>終わらなかった分は自動で翌日以降に繰り越されます。</p>`;
