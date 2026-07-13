@@ -549,34 +549,51 @@ function shortLabel(t){ const s=t.l.replace(/（\d+\/\d+）$/,""); return s.leng
 let weekOpen=false;
 let weekDayOpen=new Set();
 function simulate(){
-  // 各トラックの残タスクを今日から分単位で流し込む。
-  // 長いタスクは複数日に跨り、startD〜finDの期間を持つ。
-  // dayMin[taskId][date] = その日に割り当てられた分数（表示の目安と合算が一致するように）
+  // タスクベースのスケジュール：論点は分割せず、1つ終わらせてから次へ。
+  // 1日に入りきる論点はまとめて割り当て（丸ごと）、余った日は先へ送らず翌日を新しく使う。
+  // 1日で終わらない大論点だけ連続日にまたがせ、その間は他論点を混ぜない。
+  // dayMin[taskId][date] = その日に割り当てた分数。
+  const EPS=1e-6;
   const startD={}, finD={}, finish={}, dayMin={};
   TRACK_ORDER.forEach(tr=>{
     const rem=remaining(tr);
     if(!rem.length){ finish[tr]=tStr; return }
+    const fullB=Math.max(1, cfg().budgets[tr]||1);
     let d=new Date(today), guard=0;
     let avail=budgetFor(fmtD(d),tr);
-    const advance=()=>{ do{ d.setDate(d.getDate()+1); avail=budgetFor(fmtD(d),tr) }while(avail<=0 && guard++<1200) };
-    if(avail<=0) advance();
+    const nextDay=()=>{ do{ d.setDate(d.getDate()+1); avail=budgetFor(fmtD(d),tr); guard++ }while(avail<=0 && guard<2000) };
+    if(avail<=0) nextDay();
     let broke=false;
     for(const t of rem){
-      if(guard>=1200){ broke=true; break }
-      let need=t.m;
-      startD[t.id]=fmtD(d);
+      if(guard>=2000){ broke=true; break }
       dayMin[t.id]={};
-      while(need>avail){
-        const used=avail, ds2=fmtD(d);
-        dayMin[t.id][ds2]=(dayMin[t.id][ds2]||0)+used;
-        need-=used; advance(); if(guard>=1200){broke=true;break}
+      if(t.m <= avail+EPS){
+        // 今日の残り時間に丸ごと入る → 今日に置く
+        const ds=fmtD(d);
+        startD[t.id]=ds; finD[t.id]=ds; dayMin[t.id][ds]=t.m;
+        avail-=t.m;
+      }else if(t.m <= fullB+EPS){
+        // 1日には収まる論点だが今日はもう埋まっている → 分割せず翌日へ丸ごと
+        nextDay(); if(guard>=2000){broke=true;break}
+        const ds=fmtD(d);
+        startD[t.id]=ds; finD[t.id]=ds; dayMin[t.id][ds]=t.m;
+        avail=Math.max(0, avail-t.m);
+      }else{
+        // 1日で終わらない大論点 → 連続日にまたぐ（その間は単独）
+        if(avail < fullB-EPS){ nextDay(); if(guard>=2000){broke=true;break} }  // 使いかけの日なら新しい日から
+        startD[t.id]=fmtD(d);
+        let need=t.m;
+        while(need > avail+EPS){
+          dayMin[t.id][fmtD(d)]=avail;
+          need-=avail; nextDay(); if(guard>=2000){broke=true;break}
+        }
+        if(broke) break;
+        const ds=fmtD(d);
+        dayMin[t.id][ds]=(dayMin[t.id][ds]||0)+need;
+        avail-=need;
+        finD[t.id]=ds;
       }
-      if(broke) break;
-      const ds2=fmtD(d);
-      dayMin[t.id][ds2]=(dayMin[t.id][ds2]||0)+need;
-      avail-=need;
-      finD[t.id]=fmtD(d);
-      if(avail<=0) advance();
+      if(avail<=EPS) nextDay();
     }
     finish[tr]= broke? null : (finD[rem[rem.length-1].id] || null);
   });
@@ -653,7 +670,7 @@ function renderToday(){
       const list=allTasks.filter(t=>startD[t.id]&&startD[t.id]<=ds&&ds<=finD[t.id]);
       const doneList=allTasks.filter(t=>isDone(t)&&manualDate(t)===ds);
       const names=[...doneList,...list.filter(t=>!doneList.includes(t))];
-      const mins=days&&budgetSum(ds);
+      const mins=list.reduce((a,t)=>a+minOn(t,ds),0);   // その日に実際に割り当てた分数
       if(names.length) weekCount+=names.filter(t=>!isDone(t)).length;
       weekMins+=mins;
       const dayOpen=weekDayOpen.has(ds);
