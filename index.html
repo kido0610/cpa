@@ -263,6 +263,13 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
 #plan-scope .wday .items{flex:1;font-size:11.5px;color:var(--muted);line-height:1.7;min-width:0}
 #plan-scope .wday .items b{color:var(--ink);font-weight:600}
 #plan-scope .wday .mins{flex:none;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+#plan-scope .wday-more{color:var(--indigo);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+#plan-scope .wday-full{display:flex;flex-direction:column;gap:4px}
+#plan-scope .wday-full .wi{display:flex;gap:6px;align-items:baseline}
+#plan-scope .wday-full .wi .nm{flex:1;min-width:0}
+#plan-scope .wday-full .wi .nm.done{color:var(--muted);text-decoration:line-through}
+#plan-scope .wday-full .wi .em{flex:none;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+#plan-scope .wday-less{color:var(--muted);font-size:10.5px;margin-top:2px}
 #plan-scope .lst-subj{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
 #plan-scope .lst-subj-head{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;text-align:left}
 #plan-scope .lst-subj-head .dot{width:11px;height:11px;border-radius:3px;flex:none}
@@ -539,6 +546,7 @@ function budgetFor(dstr, track){
 function budgetSum(dstr){ return TRACK_ORDER.reduce((a,tr)=>a+budgetFor(dstr,tr),0) }
 function shortLabel(t){ const s=t.l.replace(/（\d+\/\d+）$/,""); return s.length>14? s.slice(0,13)+"…" : s }
 let weekOpen=false;
+let weekDayOpen=new Set();
 function simulate(){
   // 各トラックの残タスクを今日から分単位で流し込む。
   // 長いタスクは複数日に跨り、startD〜finDの期間を持つ。
@@ -636,10 +644,19 @@ function renderToday(){
       const mins=days&&budgetSum(ds);
       if(names.length) weekCount+=names.filter(t=>!isDone(t)).length;
       weekMins+=mins;
-      const label=names.length
-        ? names.slice(0,4).map(t=>`<b style="color:${SUBJ_COLOR[t.s]}">${t.s}</b>${isDone(t)?"✓":""} ${shortLabel(t)}`).join("　")
-          +(names.length>4?`　<span>ほか${names.length-4}件</span>`:"")
-        : "予定なし";
+      const dayOpen=weekDayOpen.has(ds);
+      let label;
+      if(!names.length){
+        label="予定なし";
+      }else if(dayOpen){
+        label=`<div class="wday-full">${names.map(t=>
+          `<div class="wi"><b style="color:${SUBJ_COLOR[t.s]}">${t.s}</b><span class="nm ${isDone(t)?"done":""}">${t.l}</span><span class="em">${Math.round(t.m)}分</span></div>`
+        ).join("")}
+        ${names.length>4?`<button class="wday-less" data-day-toggle="${ds}">▲ たたむ</button>`:""}</div>`;
+      }else{
+        label=names.slice(0,4).map(t=>`<b style="color:${SUBJ_COLOR[t.s]}">${t.s}</b>${isDone(t)?"✓":""} ${shortLabel(t)}`).join("　")
+          +(names.length>4?`　<button class="wday-more" data-day-toggle="${ds}">ほか${names.length-4}件</button>`:"");
+      }
       weekRows+=`<div class="wday ${ds===tStr?"today-row":""}">
         <span class="d">${dd2.getMonth()+1}/${dd2.getDate()}（${WD[dd2.getDay()]}）</span>
         <span class="items">${label}</span>
@@ -688,6 +705,14 @@ function renderToday(){
   });
   const wt=el.querySelector("#week-toggle");
   if(wt) wt.onclick=()=>{ weekOpen=!weekOpen; renderToday(); };
+  el.querySelectorAll("[data-day-toggle]").forEach(b=>{
+    b.onclick=(ev)=>{
+      ev.stopPropagation();
+      const ds=b.dataset.dayToggle;
+      weekDayOpen.has(ds)?weekDayOpen.delete(ds):weekDayOpen.add(ds);
+      renderToday();
+    };
+  });
 }
 
 /* ---------- 完了トグル + Undoトースト ---------- */
