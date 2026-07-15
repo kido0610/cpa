@@ -173,6 +173,15 @@ button:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
 .r-btn.pri{background:var(--shu);color:#fff}.r-btn.sec{background:var(--indigo);color:#fff}
 .r-btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--muted)}
 .empty-msg{text-align:center;color:var(--muted);font-size:13px;padding:28px 0}
+.fb-memo{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.fb-memo label{display:block;font-size:12px;font-weight:600;color:var(--indigo);letter-spacing:.08em;margin-bottom:7px}
+.fb-memo label small{display:inline;font-weight:400;color:var(--muted);letter-spacing:.02em;margin-left:8px;font-size:11px}
+.fb-memo textarea{width:100%;border:1.5px solid var(--line);border-radius:9px;padding:10px 12px;font-family:var(--sans);font-size:14px;line-height:1.6;color:var(--ink);background:#fff;resize:vertical;min-height:56px}
+.fb-memo textarea:focus{outline:none;border-color:var(--indigo)}
+.fb-memo textarea::placeholder{color:#bbb2a2}
+.memo-saved{display:inline-block;font-size:11px;color:var(--ok);margin-top:6px;opacity:0;transition:opacity .2s}
+.memo-saved.show{opacity:1}
+.memo-saved::before{content:"✓ "}
 :root{--gold:#8a6d1f;--teal:#1f6d6d}
 body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
 #plan-scope .sec-label .mins{letter-spacing:.05em;font-family:var(--sans);font-size:11px;color:var(--muted)}
@@ -350,6 +359,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
       <button data-v="weakstreak">連続で×</button>
       <button data-v="unanswered">未解答</button>
       <button data-v="marked">チェック済</button>
+      <button data-v="memo">メモ付き</button>
     </div>
 
     <div class="sec-label">出題数</div>
@@ -398,6 +408,11 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
         <div class="fb-expl" id="fb-expl"></div>
         <div class="fb-alpha" id="fb-alpha" style="display:none"></div>
         <div class="fb-meta" id="fb-meta"></div>
+        <div class="fb-memo">
+          <label for="memo-input">メモ<small>間違えた理由・なぜその答えにしたか</small></label>
+          <textarea id="memo-input" rows="2" placeholder="例：減価償却の間接控除と混同した／自信なく勘で○にした"></textarea>
+          <span class="memo-saved" id="memo-saved">保存しました</span>
+        </div>
         <button class="next-btn" id="next-btn">次へ</button>
       </div>
     </div>
@@ -1129,6 +1144,7 @@ function buildPool(){
       if(st.filter==="weakstreak"&&weakStreak(p)<2)continue;
       if(st.filter==="unanswered"&&p&&(p.o||p.x))continue;
       if(st.filter==="marked"&&!(p&&p.mk))continue;
+      if(st.filter==="memo"&&!(p&&p.memo&&p.memo.trim()))continue;
       pool.push(k);
     }
   });
@@ -1201,6 +1217,10 @@ function answer(ans){
   $("fb-expl").textContent=q.e;
   if(q.a){$("fb-alpha").style.display="";$("fb-alpha").textContent="＋α  "+q.a}else $("fb-alpha").style.display="none";
   $("fb-meta").innerHTML=`あなたの解答履歴：○${p.o}回 ✕${p.x}回`;
+  const mi=$("memo-input");
+  mi.value=p.memo||"";
+  $("memo-saved").classList.remove("show");
+  mi.oninput=()=>{ p.memo=mi.value; saveProg(); $("memo-saved").classList.add("show"); };
   $("next-btn").textContent=pos+1>=pool.length?"採点結果へ":"次へ";
   $("ox-area").style.display="none";$("fb").classList.add("show");$("fb").scrollTop=0;
 }
