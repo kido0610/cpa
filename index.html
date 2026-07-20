@@ -114,9 +114,12 @@ button:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
 .bdg{font-size:11px;border-radius:4px;padding:2.5px 8px;letter-spacing:.06em;font-weight:600}
 .bdg.iA{background:var(--shu);color:#fff}.bdg.iB{background:var(--indigo);color:#fff}.bdg.iC{background:#a39a89;color:#fff}
 .bdg.kako{background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:500}
-.mark-btn{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:4px 2px}
-.mark-btn .mbx{width:17px;height:17px;border:1.6px solid var(--shu);border-radius:3px;display:inline-block;background:#fff;transition:.12s}
-.mark-btn.on{color:var(--shu);font-weight:600}.mark-btn.on .mbx{background:var(--shu)}
+.mark-fab{display:flex;align-items:center;gap:7px;margin:0 0 10px auto;font-size:13px;color:var(--muted);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:9px 16px 9px 13px;box-shadow:0 1px 3px rgba(40,40,30,.08)}
+.mark-fab:active{transform:scale(.96)}
+.mark-fab .mbx{width:19px;height:19px;border:1.8px solid var(--shu);border-radius:4px;display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#fff;font-size:13px;transition:.12s}
+.mark-fab.on{color:var(--shu);font-weight:700;border-color:var(--shu)}
+.mark-fab.on .mbx{background:var(--shu)}
+.mark-fab.on .mbx::after{content:"✓"}
 .q-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 18px 24px;min-height:160px;box-shadow:0 1px 3px rgba(40,40,30,.05)}
 .q-card .qno{font-family:var(--serif);font-size:12px;letter-spacing:.16em;color:var(--shu);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px}
 .q-text{font-family:var(--serif);font-size:17.5px;line-height:2.05;letter-spacing:.015em;white-space:pre-line}
@@ -445,7 +448,6 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
     <div class="badges">
       <span class="bdg" id="bdg-imp" style="display:none"></span>
       <span class="bdg kako" id="bdg-kako" style="display:none"></span>
-      <button class="mark-btn" id="mark-btn"><span class="mbx"></span>チェック</button>
     </div>
     <div class="q-card">
       <div class="qno" id="qno-label"></div>
@@ -456,6 +458,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
   <div class="ans-dock">
     <div class="ans-inner">
       <div id="ox-area">
+        <button class="mark-fab" id="mark-btn"><span class="mbx"></span><span>チェック</span></button>
         <div class="ox-row">
           <button class="ox o" id="btn-o"><span class="sym">○</span>正しい</button>
           <button class="ox x" id="btn-x"><span class="sym">✕</span>誤り</button>
@@ -1161,7 +1164,6 @@ function makeQuests(){
   }
   const pool=[
     {id:"xp",ico:"⚡",name:`${game.goal}XP かせぐ`,target:game.goal,rew:25,kind:"xp"},
-    {id:"combo",ico:"🔗",name:"20連続正解を出す",target:20,rew:30,kind:"combo"},
     {id:"wrong",ico:"🧹",name:"前回×の問題を30問つぶす",target:30,rew:30,kind:"wrong"},
     {id:"answer",ico:"📝",name:"問題を150問とく",target:150,rew:20,kind:"answered"},
     {id:"arank",ico:"🅰️",name:"重要度Aの問題を50問正解する",target:50,rew:25,kind:"aCorrect"}
@@ -1450,7 +1452,7 @@ function initSubjState(){
   S.forEach((subj,si)=>{
     const allSecs=[];
     subj.ch.forEach((ch,ci)=>ch.s.forEach((g,gi)=>allSecs.push(`${si}.${ci}.${gi}`)));
-    subjState[subj.n]={secs:new Set(allSecs),imps:{0:true,1:true,2:true},order:"seq",filter:"all",limit:20,openCh:new Set()};
+    subjState[subj.n]={secs:new Set(),imps:{0:true,1:true,2:true},order:"seq",filter:"all",limit:20,openCh:new Set()};
   });
 }
 let curSi=0; // 現在開いている科目index
@@ -1650,7 +1652,7 @@ function renderQ(){
   $("qno-label").textContent=L.subj.n;
   $("q-text").textContent=q.b;
   $("stamp").className="stamp";$("stamp").innerHTML="";
-  const p=prog[qid];$("mark-btn").className="mark-btn"+(p&&p.mk?" on":"");
+  const p=prog[qid];$("mark-btn").className="mark-fab"+(p&&p.mk?" on":"");
   $("fb").classList.remove("show");$("ox-area").style.display="";
   window.scrollTo(0,0);
 }
@@ -1737,7 +1739,6 @@ initSubjState();
     const ss=await store.get(SKEY);
     if(ss){const o=JSON.parse(ss)||{};
       for(const c in o){if(!subjState[c])continue;const st=subjState[c],sv=o[c];
-        if(Array.isArray(sv.secs))st.secs=new Set(sv.secs);
         if(sv.imps)st.imps=sv.imps;if(sv.order)st.order=sv.order;if(sv.filter)st.filter=sv.filter;
         if(sv.limit!==undefined)st.limit=(sv.limit==="all"||LIMITS.includes(sv.limit))?sv.limit:20;
         if(Array.isArray(sv.openCh))st.openCh=new Set(sv.openCh);
