@@ -134,12 +134,12 @@ button:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
   @keyframes draw{to{stroke-dashoffset:0}}
   @keyframes press{0%{transform:scale(1.5);opacity:0}100%{transform:scale(1);opacity:1}}
 }
-.ans-dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);box-shadow:0 -4px 18px rgba(40,35,25,.07);padding:14px 16px calc(env(safe-area-inset-bottom) + 14px)}
+.ans-dock{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 34px);z-index:6;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 18px rgba(40,35,25,.1);padding:14px 16px;margin:0 10px}
 .ans-inner{max-width:648px;margin:0 auto}
 .ox-row{display:flex;gap:14px}
-.ox{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:16px;padding:26px 0 20px;font-size:13.5px;font-weight:600;letter-spacing:.15em;border:2px solid;transition:transform .08s;background:#fff}
+.ox{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:14px;padding:13px 0 10px;font-size:12.5px;font-weight:600;letter-spacing:.15em;border:2px solid;transition:transform .08s;background:#fff}
 .ox:active{transform:scale(.96)}
-.ox .sym{font-size:42px;line-height:1;font-weight:700}
+.ox .sym{font-size:34px;line-height:1;font-weight:700}
 .ox.o{border-color:var(--shu);color:var(--shu)}.ox.x{border-color:var(--indigo);color:var(--indigo)}
 .kb-hint{text-align:center;font-size:10.5px;color:var(--muted);margin-top:8px;display:none}
 @media (hover:hover) and (pointer:fine){.kb-hint{display:block}}
