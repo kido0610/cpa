@@ -120,6 +120,18 @@ button:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
 .mark-fab.on{color:var(--shu);font-weight:700;border-color:var(--shu)}
 .mark-fab.on .mbx{background:var(--shu)}
 .mark-fab.on .mbx::after{content:"✓"}
+.mark-mini{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:6px 12px 6px 9px;flex:none}
+.mark-mini:active{transform:scale(.96)}
+.mark-mini .mbx{width:17px;height:17px;border:1.7px solid var(--shu);border-radius:4px;display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#fff;font-size:12px}
+.mark-mini.on{color:var(--shu);font-weight:700;border-color:var(--shu)}
+.mark-mini.on .mbx{background:var(--shu)}
+.mark-mini.on .mbx::after{content:"✓"}
+.q-card.tappable{cursor:pointer}
+.q-card.tappable::after{content:"タップで解説⇄問題";position:absolute;top:8px;right:12px;font-size:10px;color:var(--muted);background:var(--paper);border-radius:999px;padding:2px 9px;letter-spacing:.02em}
+#scr-quiz.peek .stamp{display:none}
+#scr-quiz.peek .ans-dock{transform:translateY(130%)}
+.ans-dock{transition:transform .22s}
+.fb-head{align-items:center}
 .q-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 18px 24px;min-height:160px;box-shadow:0 1px 3px rgba(40,40,30,.05)}
 .q-card .qno{font-family:var(--serif);font-size:12px;letter-spacing:.16em;color:var(--shu);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px}
 .q-text{font-family:var(--serif);font-size:17.5px;line-height:2.05;letter-spacing:.015em;white-space:pre-line}
@@ -321,6 +333,15 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
 #gtoast i{font-size:18px;flex:none;font-style:normal;line-height:1}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
 .confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:cfall linear forwards}
+.combo-flash{position:fixed;left:0;right:0;top:38%;z-index:75;text-align:center;pointer-events:none;opacity:0;transform:scale(.7) translateY(10px);transition:opacity .25s,transform .25s}
+.combo-flash.show{opacity:1;transform:scale(1) translateY(0)}
+.combo-flash .cf-big{font-family:var(--serif);font-weight:700;color:var(--shu);text-shadow:0 2px 10px rgba(201,56,31,.25);letter-spacing:.04em}
+.combo-flash .cf-sub{font-size:14px;color:var(--indigo);font-weight:700;margin-top:6px;letter-spacing:.08em}
+.combo-flash.t1 .cf-big{font-size:30px}
+.combo-flash.t2 .cf-big{font-size:36px}
+.combo-flash.t3 .cf-big{font-size:44px;color:#b8860b}
+.combo-flash.t4 .cf-big{font-size:52px;background:linear-gradient(90deg,#c9381f,#d9a441,#c9381f);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.combo-flash.t5 .cf-big{font-size:60px;background:linear-gradient(90deg,#c9381f,#d9a441,#2c6e49,#28406a,#c9381f);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 @keyframes cfall{to{transform:translateY(104vh) rotate(720deg);opacity:.85}}
 
 .lvcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;margin-bottom:12px;display:flex;align-items:center;gap:13px}
@@ -365,6 +386,13 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
 .buybtn{flex:none;font-size:12px;font-weight:700;background:var(--indigo);color:#fff;border-radius:999px;padding:7px 13px;display:flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
 .buybtn:disabled,.buybtn.off{background:#d8d2c4;color:#8b8376}
 .buybtn i{font-size:13px;font-style:normal}
+.reviewbtn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:linear-gradient(135deg,#2c6e49,#1f6d6d);color:#fff;border-radius:14px;padding:15px 16px;margin-bottom:14px;box-shadow:0 3px 12px rgba(31,109,109,.28)}
+.reviewbtn:active{transform:scale(.99)}
+.reviewbtn .rvi{font-size:26px;flex:none}
+.reviewbtn .rvb{flex:1;min-width:0}
+.reviewbtn .rvt{font-size:15px;font-weight:700;letter-spacing:.04em}
+.reviewbtn .rvs{font-size:11.5px;opacity:.9;margin-top:2px;line-height:1.4}
+.reviewbtn .rvn{flex:none;background:rgba(255,255,255,.2);border-radius:999px;padding:5px 12px;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 
 </style>
 </head>
@@ -383,6 +411,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
     <div class="ghud"></div>
   </header>
   <div class="body-wrap">
+    <div id="review-band"></div>
     <div class="sec-label">科目をえらぶ</div>
     <div id="subj-area"></div>
     <p class="foot-note">科目をタップ → 章・論点をえらんで出題。解答状況とチェックは自動保存されます。本試験にならい、科目をまたいだ出題はしません。</p>
@@ -449,7 +478,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
       <span class="bdg" id="bdg-imp" style="display:none"></span>
       <span class="bdg kako" id="bdg-kako" style="display:none"></span>
     </div>
-    <div class="q-card">
+    <div class="q-card" id="q-card">
       <div class="qno" id="qno-label"></div>
       <div class="q-text" id="q-text"></div>
       <div class="stamp" id="stamp"></div>
@@ -469,6 +498,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
         <div class="fb-head">
           <span class="fb-judge" id="fb-judge"></span>
           <span class="fb-ans" id="fb-ans"></span>
+          <button class="mark-mini" id="mark-btn2"><span class="mbx"></span>チェック</button>
         </div>
         <div id="fb-ref"></div>
         <div class="fb-expl" id="fb-expl"></div>
@@ -1307,6 +1337,77 @@ function renderHud(){
 function popChip(id){ const e=document.getElementById(id); if(!e) return; e.classList.remove("pop"); void e.offsetWidth; e.classList.add("pop") }
 
 /* ---- 演習の解答時に呼ぶ ---- */
+let gSessCorrect=0;
+/* ---- 忘却曲線（Leitner） ---- */
+const SRS_INT=[1,3,7,16,35,60];
+function srsUpdate(qid,correct){
+  if(!game.srs) game.srs={};
+  const s=game.srs[qid]||{box:0};
+  s.box=correct?Math.min(s.box+1,SRS_INT.length-1):0;
+  const d=new Date(); d.setDate(d.getDate()+SRS_INT[s.box]);
+  s.due=fmtD(d);
+  game.srs[qid]=s;
+}
+function dueReviewQids(){
+  if(!game.srs) return [];
+  const t=gToday(), out=[];
+  for(const qid in game.srs){ if(game.srs[qid].due<=t) out.push(Number(qid)) }
+  out.sort((a,b)=>(game.srs[a].due<game.srs[b].due?-1:1)||a-b);
+  return out;
+}
+function renderReviewBand(){
+  const band=document.getElementById("review-band"); if(!band) return;
+  const due=dueReviewQids();
+  if(!due.length){ band.innerHTML=""; return }
+  band.innerHTML=`<button class="reviewbtn" id="review-start">
+    <span class="rvi">🔁</span>
+    <span class="rvb"><span class="rvt">今日の復習</span>
+      <span class="rvs">忘れかけの問題を最適なタイミングで出題</span></span>
+    <span class="rvn">${due.length}問</span></button>`;
+  document.getElementById("review-start").onclick=()=>{ startReview(due) };
+}
+function startReview(qids){
+  isReview=true;
+  const lim=Math.min(qids.length,50);
+  startQuiz(qids.slice(0,lim));
+}
+let isReview=false;
+
+// 段階的に豪華になる紙吹雪（tier 1..5）
+function bigConfetti(tier){
+  const wrap=document.createElement("div"); wrap.className="confetti";
+  const cols=["#c9381f","#28406a","#8a6d1f","#2c6e49","#1f6d6d","#d9a441","#e85d3d","#3d5a96"];
+  const n=40+tier*35;                          // tierが上がるほど量が増える
+  for(let i=0;i<n;i++){
+    const s=document.createElement("i");
+    s.style.left=Math.random()*100+"vw";
+    s.style.background=cols[i%cols.length];
+    const sz=6+Math.random()*(6+tier*2);
+    s.style.width=sz+"px"; s.style.height=(sz*1.5)+"px";
+    s.style.animationDuration=(1.0+Math.random()*(1.0+tier*.25))+"s";
+    s.style.animationDelay=(Math.random()*.35)+"s";
+    wrap.appendChild(s);
+  }
+  document.body.appendChild(wrap); setTimeout(()=>wrap.remove(),2800+tier*300);
+}
+function comboFlash(text,sub,tier){
+  const el=document.createElement("div"); el.className="combo-flash t"+tier;
+  el.innerHTML=`<div class="cf-big">${text}</div><div class="cf-sub">${sub}</div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.classList.add("show"),10);
+  setTimeout(()=>{el.classList.remove("show");setTimeout(()=>el.remove(),300)},1200);
+}
+function celebrateCombo(c){
+  const tier=Math.min(5,Math.floor(c/5));       // 5→1, 10→2, 25→5(頭打ち)
+  bigConfetti(tier); gBeep(tier>=3?"win":"combo");
+  const labels={1:"ナイス！",2:"絶好調！",3:"すごい！",4:"神がかり！",5:"圧巻！"};
+  comboFlash(c+" 連続正解",labels[tier]||"連続正解",tier);
+}
+function celebrateSession(n){
+  const tier=Math.min(5,Math.floor(n/10)+1);
+  bigConfetti(tier); gBeep("gem");
+  comboFlash("このセッション "+n+" 問正解","この調子で積み上げよう",tier);
+}
 function gameOnAnswer(qid,correct){
   dailyReset();
   const q=Q[qid], wasWrong=prog[qid]&&prog[qid].last==="x";
@@ -1315,7 +1416,9 @@ function gameOnAnswer(qid,correct){
   if(correct){
     gCombo++; game.daily.maxCombo=Math.max(game.daily.maxCombo,gCombo);
     if(gCombo>=20) xp+=10; else if(gCombo>=10) xp+=5; else if(gCombo>=5) xp+=2;
-    if(gCombo>0&&gCombo%5===0) gBeep("combo");
+    gSessCorrect++;
+    if(gCombo>0&&gCombo%5===0) celebrateCombo(gCombo);
+    else if(gSessCorrect>0&&gSessCorrect%10===0) celebrateSession(gSessCorrect);
   }else gCombo=0;
   const gained=addXP(xp);
   game.daily.answered++;
@@ -1324,6 +1427,7 @@ function gameOnAnswer(qid,correct){
     if(q.i===0) game.daily.aCorrect++;
     if(wasWrong){ game.daily.wrongCleared++; game.wrongClearedTotal=(game.wrongClearedTotal||0)+1 }
   }
+  srsUpdate(qid,correct);
   markStudied(); applyFreeze();
   saveGame(); renderHud(); popChip("gchip-xp"); if(correct) popChip("gchip-gem");
   goalCheck(); questProgress(); checkLevelUp(); checkBadges();
@@ -1493,6 +1597,7 @@ function secStat(si,ci,gi){
 /* ---- ホーム描画 ---- */
 function renderHome(){
   if(typeof renderHud==="function")renderHud();
+  if(typeof renderReviewBand==="function")renderReviewBand();
   let gt=0,gd=0,go=0;
   const area=$("subj-area");area.innerHTML="";
   S.forEach((subj,si)=>{
@@ -1627,7 +1732,7 @@ function refreshStart(){
 
 /* ---- クイズ ---- */
 let pool=[],pos=0,answered=false,session=[],poolSi=0;
-function startQuiz(p){if(!p.length)return;pool=p;pos=0;session=[];poolSi=curSi;show("scr-quiz");renderQ()}
+function startQuiz(p){if(!p.length)return;pool=p;pos=0;session=[];poolSi=curSi;gCombo=0;gSessCorrect=0;show("scr-quiz");renderQ()}
 function locate(qid){
   for(let si=0;si<S.length;si++)for(let ci=0;ci<S[si].ch.length;ci++)for(let gi=0;gi<S[si].ch[ci].s.length;gi++){
     const[a,b]=S[si].ch[ci].s[gi].r;if(qid>=a&&qid<b)return{si,ci,gi,subj:S[si],chap:S[si].ch[ci],sec:S[si].ch[ci].s[gi]};
@@ -1654,6 +1759,8 @@ function renderQ(){
   $("stamp").className="stamp";$("stamp").innerHTML="";
   const p=prog[qid];$("mark-btn").className="mark-fab"+(p&&p.mk?" on":"");$("mark-btn").style.display="flex";
   $("fb").classList.remove("show");$("ox-area").style.display="";
+  $("scr-quiz").classList.remove("peek");
+  $("q-card").classList.remove("tappable");
   window.scrollTo(0,0);
 }
 function stampSVG(ok){return ok?`<svg viewBox="0 0 100 100"><circle class="draw1" cx="50" cy="50" r="38" pathLength="100" transform="rotate(-90 50 50)"/></svg>`
@@ -1686,7 +1793,9 @@ function answer(ans){
   $("memo-saved").classList.remove("show");
   mi.oninput=()=>{ p.memo=mi.value; saveProg(); $("memo-saved").classList.add("show"); };
   $("next-btn").textContent=pos+1>=pool.length?"採点結果へ":"次へ";
+  $("mark-btn2").className="mark-mini"+(p&&p.mk?" on":"");
   $("ox-area").style.display="none";$("mark-btn").style.display="none";$("fb").classList.add("show");$("fb").scrollTop=0;
+  $("q-card").classList.add("tappable");
 }
 function next(){if(!answered)return;if(pos+1>=pool.length){renderResult();show("scr-result")}else{pos++;renderQ()}}
 
@@ -1720,12 +1829,23 @@ $("btn-o").onclick=()=>answer(1);
 $("btn-x").onclick=()=>answer(0);
 $("next-btn").onclick=next;
 $("quit-btn").onclick=()=>{if(session.length){renderResult();show("scr-result")}else{curSi=poolSi;openSubject(curSi)}};
-$("mark-btn").onclick=()=>{const qid=pool[pos];const p=prog[qid]||(prog[qid]={o:0,x:0,last:"",mk:0,hist:[]});p.mk=p.mk?0:1;$("mark-btn").classList.toggle("on",!!p.mk);saveProg()};
+function toggleMark(){
+  const qid=pool[pos];const p=prog[qid]||(prog[qid]={o:0,x:0,last:"",mk:0,hist:[]});
+  p.mk=p.mk?0:1;
+  $("mark-btn").classList.toggle("on",!!p.mk);
+  $("mark-btn2").classList.toggle("on",!!p.mk);
+  saveProg();
+}
+$("mark-btn").onclick=toggleMark;
+$("q-card").addEventListener("click",()=>{ if(answered) $("scr-quiz").classList.toggle("peek"); });
+$("mark-btn2").onclick=toggleMark;
 $("r-retry-wrong").onclick=()=>{curSi=poolSi;startQuiz(session.filter(s=>!s.correct).map(s=>s.qid))};
 $("r-retry-same").onclick=()=>{curSi=poolSi;startQuiz(buildPool())};
-$("r-home").onclick=()=>{renderHome();show("scr-home")};
+$("r-home").onclick=()=>{isReview=false;renderHome();show("scr-home")};
 document.addEventListener("keydown",e=>{
   if(!$("scr-quiz").classList.contains("active"))return;
+  const tag=(e.target.tagName||"").toLowerCase();
+  if(tag==="textarea"||tag==="input")return;   // メモ入力中はキー操作を無効化（改行を活かす）
   if(e.key==="ArrowLeft"||e.key==="1")answer(1);
   else if(e.key==="ArrowRight"||e.key==="2")answer(0);
   else if(e.key==="Enter"||e.key===" "){e.preventDefault();next()}
