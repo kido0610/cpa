@@ -336,6 +336,44 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
 #gtoast i{font-size:18px;flex:none;font-style:normal;line-height:1}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
 .confetti i{position:absolute;top:-12px;width:9px;height:14px;border-radius:2px;animation:cfall linear forwards}
+/* モンスター購入券 */
+.mst-card{background:linear-gradient(135deg,#0f2417,#1d4a2c);border-radius:14px;padding:16px;margin-bottom:12px;color:#eafff2;box-shadow:0 3px 14px rgba(20,60,35,.3)}
+.mst-top{display:flex;align-items:center;gap:13px}
+.mst-ico{font-size:34px;flex:none}
+.mst-b{flex:1;min-width:0}
+.mst-n{font-size:15px;font-weight:600}
+.mst-n b{font-size:22px;color:#8ff0b5;font-variant-numeric:tabular-nums;margin:0 2px}
+.mst-d{font-size:11px;opacity:.8;margin-top:3px;line-height:1.5}
+.mst-use{width:100%;margin-top:12px;background:#8ff0b5;color:#0f2417;font-weight:700;font-size:13.5px;border-radius:10px;padding:11px;letter-spacing:.06em}
+.mst-use.off{background:rgba(255,255,255,.16);color:rgba(234,255,242,.5)}
+/* 称号コレクション */
+.tt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:4px}
+.tt{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;text-align:left;display:flex;align-items:center;gap:7px}
+.tt.eq{border-color:var(--indigo);background:#eef2f8;box-shadow:0 0 0 2px rgba(40,64,106,.12)}
+.tt-r{font-size:9px;font-weight:700;letter-spacing:.06em;border-radius:4px;padding:2px 5px;background:#ded8ca;color:#6b6459;flex:none}
+.tt.R .tt-r{background:#2c6e49;color:#fff}
+.tt.SR .tt-r{background:#8a6d1f;color:#fff}
+.tt.UR .tt-r{background:linear-gradient(135deg,#c9381f,#d9a441);color:#fff}
+.tt-n{font-size:12px;font-weight:600;line-height:1.3;min-width:0}
+/* ガチャ結果 */
+.gacha-ov{position:fixed;inset:0;z-index:90;background:rgba(20,18,14,.6);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity .25s}
+.gacha-ov.show{opacity:1}
+.gacha-box{background:var(--card);border-radius:16px;padding:20px 18px;max-width:400px;width:100%;max-height:80vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.gc-ttl{font-family:var(--serif);font-size:16px;letter-spacing:.16em;color:var(--indigo);text-align:center;margin-bottom:14px}
+.gc-list{display:flex;flex-direction:column;gap:7px}
+.gc-item{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:9px;padding:9px 11px}
+.gc-item.dup{opacity:.55}
+.gc-item .gc-r{font-size:9.5px;font-weight:700;border-radius:4px;padding:2px 6px;background:#ded8ca;color:#6b6459;flex:none}
+.gc-item.R .gc-r{background:#2c6e49;color:#fff}
+.gc-item.SR .gc-r{background:#8a6d1f;color:#fff}
+.gc-item.UR .gc-r{background:linear-gradient(135deg,#c9381f,#d9a441);color:#fff}
+.gc-item.SR{border-color:#8a6d1f}
+.gc-item.UR{border-color:var(--shu);box-shadow:0 0 0 2px rgba(201,56,31,.15)}
+.gc-n{flex:1;font-size:13px;font-weight:600}
+.gc-new{font-size:9.5px;font-weight:700;color:var(--shu);flex:none}
+.gc-d{font-size:9.5px;color:var(--muted);flex:none}
+.gc-ref{text-align:center;font-size:12px;color:var(--gold);font-weight:700;margin-top:10px}
+.gc-close{width:100%;margin-top:14px;background:var(--indigo);color:#fff;font-weight:700;border-radius:10px;padding:11px;font-size:14px;letter-spacing:.08em}
 /* ボーナス問題バッジ */
 .bdg.bonus{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;animation:bpulse 1.1s ease-in-out infinite}
 @keyframes bpulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.9}}
@@ -989,9 +1027,19 @@ function renderProg(){
     html+=`<div class="mock-li ${past?"past":""}"><span class="no">第${i+1}回</span><span class="dt">${m.replace(/-/g,"/")}</span><span class="st">${past?"実施済":daysUntil(m)+"日後"}</span></div>`;
   });
   html+=`</div>`;
-  html+=badgesHTML()+shopHTML();
+  html+=monsterHTML()+badgesHTML()+titlesHTML()+shopHTML();
   el.innerHTML=html;
   bindShop(el);
+  const mu=el.querySelector("#mst-use");
+  if(mu) mu.onclick=()=>{
+    if(!(game.monsterTickets>0)){ gToast("券がありません。ショップで交換できます","🧃"); return }
+    game.monsterTickets--; game.monsterUsed=(game.monsterUsed||0)+1;
+    game.monsterLog=(game.monsterLog||[]).concat([gToday()]);
+    saveGame(); gBeep("gem"); gToast("おつかれさま。通算 "+game.monsterUsed+"本目","🧃"); renderAll();
+  };
+  el.querySelectorAll("[data-eq]").forEach(b=>b.onclick=()=>{
+    game.equipTitle=b.dataset.eq||null; saveGame(); renderAll();
+  });
 }
 
 /* ---------- 描画: 一覧 ---------- */
@@ -1081,6 +1129,7 @@ function renderSet(){
   理論タスクは「演習」タブの解答履歴と自動連動します。</div>
   <div class="sec-label">ゲーム設定</div><div class="set-group">
     <div class="set-row"><label>1日の目標XP<small>達成で💎+50</small></label><input type="number" id="set-goal" value="${game.goal}" step="50"></div>
+    <div class="set-row"><label>モンスター券の価格<small>💎。1,200＝ほぼ1日ぶんの学習</small></label><input type="number" id="set-mprice" value="${game.monsterPrice||1200}" step="100"></div>
     <div class="set-row"><label>効果音</label><div class="setseg" style="flex:none;width:150px">
       <button data-sound="1" class="${game.sound?"on":""}">ON</button>
       <button data-sound="0" class="${game.sound?"":"on"}">OFF</button></div></div>
@@ -1106,6 +1155,7 @@ function renderSet(){
     };
   });
   el.querySelector("#set-goal").onchange=e=>{ game.goal=Math.max(50,Number(e.target.value)||500); saveGame(); renderAll() };
+  el.querySelector("#set-mprice").onchange=e=>{ game.monsterPrice=Math.max(100,Number(e.target.value)||1200); saveGame(); renderAll() };
   el.querySelectorAll("[data-sound]").forEach(b=>b.onclick=()=>{ game.sound=b.dataset.sound==="1"; saveGame(); if(game.sound){unlockAudio();gBeep("ok")} if(typeof syncSoundBtn==="function")syncSoundBtn(); renderSet() });
   el.querySelectorAll("[data-font]").forEach(b=>b.onclick=()=>{ game.fontIdx=Number(b.dataset.font); saveGame(); applyFont(); renderSet() });
   el.querySelector("#set-greset").onclick=()=>{
@@ -1141,7 +1191,8 @@ const GKEY="cpa-game-v1";
 const GAME_DEFAULT={xp:0,gems:0,freezes:0,goal:500,badges:[],frozenDays:[],xpLog:{},
   goalHitDates:[],quests:{date:"",list:[]},studyLog:{},awardedTasks:{},
   daily:{date:"",answered:0,correct:0,aCorrect:0,subjects:[],perfect:0,tasksDone:0,wrongCleared:0,maxCombo:0},
-  level:1,boostUntil:0,everPerfect:false,sound:true,fontIdx:1};
+  level:1,boostUntil:0,everPerfect:false,sound:true,fontIdx:1,
+  titles:[],equipTitle:null,monsterTickets:0,monsterUsed:0,monsterPrice:1200,monsterLog:[]};
 let game=Object.assign({},GAME_DEFAULT);
 try{ const g=JSON.parse(localStorage.getItem(GKEY)||"null"); if(g) game=Object.assign({},GAME_DEFAULT,g); }catch(e){}
 function saveGame(){ try{ localStorage.setItem(GKEY, JSON.stringify(game)) }catch(e){} }
@@ -1486,6 +1537,70 @@ function celebrateSession(n){
   bigConfetti(tier); gBeep("gem");
   comboFlash("このセッション "+n+" 問正解","この調子で積み上げよう",tier);
 }
+/* ---- 称号ガチャ ---- */
+const GACHA_TITLES=[
+ // N（25種）
+ {id:"n1",r:"N",name:"電卓叩き"},{id:"n2",r:"N",name:"早起き受験生"},{id:"n3",r:"N",name:"付箋の達人"},
+ {id:"n4",r:"N",name:"マーカー職人"},{id:"n5",r:"N",name:"徹夜明け"},{id:"n6",r:"N",name:"カフェインの友"},
+ {id:"n7",r:"N",name:"自習室の主"},{id:"n8",r:"N",name:"積読解消中"},{id:"n9",r:"N",name:"過去問マニア"},
+ {id:"n10",r:"N",name:"語呂合わせ職人"},{id:"n11",r:"N",name:"仕訳を切る者"},{id:"n12",r:"N",name:"借方の番人"},
+ {id:"n13",r:"N",name:"貸方の番人"},{id:"n14",r:"N",name:"電車で暗記"},{id:"n15",r:"N",name:"隙間時間ハンター"},
+ {id:"n16",r:"N",name:"ノート整理魔"},{id:"n17",r:"N",name:"答練マニア"},{id:"n18",r:"N",name:"答案用紙の友"},
+ {id:"n19",r:"N",name:"赤ペン使い"},{id:"n20",r:"N",name:"眠気と戦う者"},{id:"n21",r:"N",name:"図書館の常連"},
+ {id:"n22",r:"N",name:"朝型宣言"},{id:"n23",r:"N",name:"夜型の申し子"},{id:"n24",r:"N",name:"暗記カード愛好家"},
+ {id:"n25",r:"N",name:"予備校皆勤賞"},
+ // R（15種）
+ {id:"r1",r:"R",name:"連結の使い手"},{id:"r2",r:"R",name:"税効果マスター"},{id:"r3",r:"R",name:"リースの探究者"},
+ {id:"r4",r:"R",name:"減損を見抜く者"},{id:"r5",r:"R",name:"退職給付の理解者"},{id:"r6",r:"R",name:"金融商品の航海士"},
+ {id:"r7",r:"R",name:"原価計算の職人"},{id:"r8",r:"R",name:"標準原価の設計者"},{id:"r9",r:"R",name:"監査手続の実践者"},
+ {id:"r10",r:"R",name:"内部統制の守護者"},{id:"r11",r:"R",name:"機関設計の相談役"},{id:"r12",r:"R",name:"株主総会の仕切り屋"},
+ {id:"r13",r:"R",name:"ＣＦを追う者"},{id:"r14",r:"R",name:"企業結合の交渉人"},{id:"r15",r:"R",name:"収益認識の解読者"},
+ // SR（7種）
+ {id:"s1",r:"SR",name:"連結の鬼"},{id:"s2",r:"SR",name:"論点潰しの達人"},{id:"s3",r:"SR",name:"短答ハンター"},
+ {id:"s4",r:"SR",name:"計算速度の化身"},{id:"s5",r:"SR",name:"理論暗記の怪物"},{id:"s6",r:"SR",name:"弱点粉砕機"},
+ {id:"s7",r:"SR",name:"深夜の求道者"},
+ // UR（3種）
+ {id:"u1",r:"UR",name:"簿記の神"},{id:"u2",r:"UR",name:"会計の求道者"},{id:"u3",r:"UR",name:"不滅の受験生"}
+];
+const GACHA_PRICE=300, GACHA_PRICE10=2700, DUP_REFUND={N:30,R:60,SR:150,UR:400};
+function rollTitle(){
+  const r=Math.random();
+  const rar = r<0.02?"UR" : r<0.10?"SR" : r<0.35?"R" : "N";
+  const pool=GACHA_TITLES.filter(t=>t.r===rar);
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function pullGacha(n){
+  const price = n===10?GACHA_PRICE10:GACHA_PRICE;
+  if(game.gems<price){ gToast("ジェムが足りません","💎"); return }
+  game.gems-=price;
+  if(!game.titles) game.titles=[];
+  const got=[]; let refund=0;
+  for(let i=0;i<n;i++){
+    const t=rollTitle();
+    if(game.titles.includes(t.id)){ refund+=DUP_REFUND[t.r]; got.push({t,dup:true}) }
+    else { game.titles.push(t.id); got.push({t,dup:false}) }
+  }
+  if(refund) game.gems+=refund;
+  saveGame();
+  showGachaResult(got,refund);
+  const best=got.reduce((a,g)=>["N","R","SR","UR"].indexOf(g.t.r)>["N","R","SR","UR"].indexOf(a)?g.t.r:a,"N");
+  if(best==="UR"||best==="SR"){ bigConfetti(best==="UR"?5:3); gBeep("win") } else gBeep("gem");
+}
+function showGachaResult(got,refund){
+  const el=document.createElement("div"); el.className="gacha-ov";
+  el.innerHTML=`<div class="gacha-box">
+    <div class="gc-ttl">称号ガチャ</div>
+    <div class="gc-list">${got.map(g=>`<div class="gc-item ${g.t.r}${g.dup?" dup":""}">
+      <span class="gc-r">${g.t.r}</span><span class="gc-n">${g.t.name}</span>
+      ${g.dup?'<span class="gc-d">重複</span>':'<span class="gc-new">NEW</span>'}</div>`).join("")}</div>
+    ${refund?`<div class="gc-ref">重複分 💎+${refund} 返還</div>`:""}
+    <button class="gc-close">閉じる</button></div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.classList.add("show"),10);
+  el.querySelector(".gc-close").onclick=()=>{ el.remove(); renderAll() };
+  el.onclick=(e)=>{ if(e.target===el){ el.remove(); renderAll() } };
+}
+
 /* ---- ランダム報酬 ---- */
 let bonusQ=false;            // この問題が3倍XPか
 let chestCounter=0;          // 宝箱までのカウンタ
@@ -1591,12 +1706,13 @@ function gameOnTask(t,nowDone){
 
 
 /* ---------- ゲーム描画 ---------- */
+function eqTitle(){ return game.equipTitle?GACHA_TITLES.find(t=>t.id===game.equipTitle):null }
 function levelHTML(){
   const lv=levelInfo();
   return `<div class="lvcard">
     <div class="lvb"><b>${lv.level}</b><span>LEVEL</span></div>
     <div class="lvi">
-      <div class="lvt"><i>${lv.title.ico}</i>${lv.title.name}</div>
+      <div class="lvt"><i>${eqTitle()?"🏷️":lv.title.ico}</i>${eqTitle()?eqTitle().name:lv.title.name}</div>
       <div class="lvx">次のLvまで ${lv.inLevel.toLocaleString()} / ${lv.need.toLocaleString()} XP　通算 ${game.xp.toLocaleString()} XP</div>
       <div class="lvbar"><i style="width:${lv.pct}%"></i></div>
     </div></div>`;
@@ -1626,6 +1742,20 @@ function badgesHTML(){
   return s+`</div>`;
 }
 const SHOP=[
+  {id:"monster",ico:"🧃",name:"モンスター購入券",price:0,
+   desc:()=>`現実でモンスターを買う権利　保有 ${game.monsterTickets||0}枚`,
+   priceOf:()=>game.monsterPrice||1200,
+   can:()=>game.gems>=(game.monsterPrice||1200),
+   buy:()=>{ game.gems-=(game.monsterPrice||1200); game.monsterTickets=(game.monsterTickets||0)+1;
+     confetti(); gToast("モンスター購入券を獲得！ 買いに行こう","🧃") }},
+  {id:"gacha",ico:"🎰",name:"称号ガチャ（1回）",price:GACHA_PRICE,
+   desc:()=>`全${GACHA_TITLES.length}種　所持 ${(game.titles||[]).length}種`,
+   can:()=>game.gems>=GACHA_PRICE,
+   buy:()=>{ pullGacha(1) }, noToast:true},
+  {id:"gacha10",ico:"🎰",name:"称号ガチャ（10連・1割引）",price:GACHA_PRICE10,
+   desc:()=>"まとめて10回引く",
+   can:()=>game.gems>=GACHA_PRICE10,
+   buy:()=>{ pullGacha(10) }, noToast:true},
   {id:"freeze",ico:"🧊",name:"ストリークフリーズ",price:800,
    desc:()=>`1日空いても連続を維持・保有 ${game.freezes}/3`,
    can:()=>game.gems>=800&&game.freezes<3,
@@ -1639,13 +1769,37 @@ const SHOP=[
    can:()=>game.gems>=3000,
    buy:()=>{game.gems-=3000;game.titleBoost=(game.titleBoost||0)+1;gToast("称号を先行解放しました","👑")}}
 ];
+function monsterHTML(){
+  const tk=game.monsterTickets||0, used=game.monsterUsed||0;
+  return `<div class="sec-label">モンスター購入券<span class="mins">通算 ${used}本</span></div>
+  <div class="mst-card">
+    <div class="mst-top"><span class="mst-ico">🧃</span>
+      <div class="mst-b"><div class="mst-n">保有 <b>${tk}</b> 枚</div>
+        <div class="mst-d">1枚＝現実でモンスター1本。買ったら「1本飲んだ」を押す</div></div></div>
+    <button class="mst-use ${tk?"":"off"}" id="mst-use">1本飲んだ（券を使う）</button>
+  </div>`;
+}
+function titlesHTML(){
+  const owned=game.titles||[];
+  if(!owned.length) return `<div class="sec-label">称号コレクション<span class="mins">0 / ${GACHA_TITLES.length}</span></div>
+    <div class="note">ショップの称号ガチャで集められます。</div>`;
+  const order={UR:0,SR:1,R:2,N:3};
+  const list=GACHA_TITLES.filter(t=>owned.includes(t.id)).sort((a,b)=>order[a.r]-order[b.r]);
+  let s=`<div class="sec-label">称号コレクション<span class="mins">${owned.length} / ${GACHA_TITLES.length}</span></div><div class="tt-grid">`;
+  s+=`<button class="tt ${!game.equipTitle?"eq":""}" data-eq=""><span class="tt-r">－</span><span class="tt-n">レベル称号</span></button>`;
+  list.forEach(t=>{
+    s+=`<button class="tt ${t.r} ${game.equipTitle===t.id?"eq":""}" data-eq="${t.id}">
+      <span class="tt-r">${t.r}</span><span class="tt-n">${t.name}</span></button>`;
+  });
+  return s+`</div>`;
+}
 function shopHTML(){
   let s=`<div class="sec-label">ショップ<span class="mins">💎 ${game.gems.toLocaleString()}</span></div><div class="qcard">`;
   SHOP.forEach(it=>{
-    const ok=it.can();
+    const ok=it.can(), pr=it.priceOf?it.priceOf():it.price;
     s+=`<div class="shoprow"><i>${it.ico}</i>
       <div class="shopb"><div class="shopn">${it.name}</div><div class="shopd">${it.desc()}</div></div>
-      <button class="buybtn ${ok?"":"off"}" data-buy="${it.id}"><i>💎</i>${it.price.toLocaleString()}</button></div>`;
+      <button class="buybtn ${ok?"":"off"}" data-buy="${it.id}"><i>💎</i>${pr.toLocaleString()}</button></div>`;
   });
   return s+`</div>`;
 }
@@ -1653,8 +1807,9 @@ function bindShop(el){
   el.querySelectorAll("[data-buy]").forEach(b=>{
     b.onclick=()=>{
       const it=SHOP.find(x=>x.id===b.dataset.buy);
-      if(!it.can()){ gToast(game.gems<it.price?"ジェムが足りません":"今は購入できません","💎"); return }
-      it.buy(); saveGame(); gBeep("gem"); renderAll();
+      const pr=it.priceOf?it.priceOf():it.price;
+      if(!it.can()){ gToast(game.gems<pr?"ジェムが足りません":"今は購入できません","💎"); return }
+      it.buy(); saveGame(); if(!it.noToast) gBeep("gem"); renderAll();
     };
   });
 }
