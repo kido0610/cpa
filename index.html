@@ -105,6 +105,9 @@ button:focus-visible{outline:3px solid var(--indigo);outline-offset:2px}
 .q-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px;background:var(--paper);position:sticky;top:0;z-index:5}
 .q-head .quit{font-size:13px;color:var(--muted);padding:6px 4px;white-space:nowrap}
 .q-head .pno{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--indigo);white-space:nowrap}
+.snd-btn{font-size:17px;line-height:1;padding:6px 8px;border-radius:8px;flex:none;opacity:.85}
+.snd-btn:active{transform:scale(.92)}
+.snd-btn.off{opacity:.45;filter:grayscale(1)}
 .pbar{flex:1;height:5px;background:#e7e2d3;border-radius:3px;overflow:hidden}
 .pbar i{display:block;height:100%;background:var(--indigo);transition:width .25s}
 .q-body{flex:1;padding:6px 16px 220px;max-width:680px;width:100%;margin:0 auto}
@@ -469,6 +472,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 74px)}
 <div class="screen" id="scr-quiz">
   <div class="q-head">
     <button class="quit" id="quit-btn">◀ 終了</button>
+    <button class="snd-btn" id="snd-btn" aria-label="効果音の切替">🔊</button>
     <div class="pbar"><i id="pbar-i"></i></div>
     <div class="pno" id="pno">1 / 1</div>
   </div>
@@ -1061,7 +1065,7 @@ function renderSet(){
     };
   });
   el.querySelector("#set-goal").onchange=e=>{ game.goal=Math.max(50,Number(e.target.value)||500); saveGame(); renderAll() };
-  el.querySelectorAll("[data-sound]").forEach(b=>b.onclick=()=>{ game.sound=b.dataset.sound==="1"; saveGame(); if(game.sound)gBeep("ok"); renderSet() });
+  el.querySelectorAll("[data-sound]").forEach(b=>b.onclick=()=>{ game.sound=b.dataset.sound==="1"; saveGame(); if(game.sound){unlockAudio();gBeep("ok")} if(typeof syncSoundBtn==="function")syncSoundBtn(); renderSet() });
   el.querySelectorAll("[data-font]").forEach(b=>b.onclick=()=>{ game.fontIdx=Number(b.dataset.font); saveGame(); applyFont(); renderSet() });
   el.querySelector("#set-greset").onclick=()=>{
     if(confirm("レベル・XP・ジェム・実績・ストリークを全て消します。演習の解答履歴と計画は消えません。よいですか？")){
@@ -1282,8 +1286,35 @@ function checkBadges(){
 }
 
 /* ---- 効果音 ---- */
-let _ac=null;
-function ac(){ try{ if(!_ac) _ac=new (window.AudioContext||window.webkitAudioContext)(); return _ac }catch(e){ return null } }
+let _ac=null, _audioUnlocked=false;
+function setAmbientSession(){
+  // iOS: 他アプリ(Apple Music等)の再生を止めずに音を重ねる
+  try{ if(navigator.audioSession) navigator.audioSession.type="ambient" }catch(e){}
+}
+function ac(){
+  try{
+    if(!_ac){
+      setAmbientSession();
+      _ac=new (window.AudioContext||window.webkitAudioContext)();
+    }
+    return _ac;
+  }catch(e){ return null }
+}
+function unlockAudio(){
+  setAmbientSession();
+  const c=ac(); if(!c) return;
+  if(c.state!=="running") c.resume().catch(()=>{});
+  if(!_audioUnlocked){
+    try{
+      const b=c.createBuffer(1,1,22050), s=c.createBufferSource();
+      s.buffer=b; s.connect(c.destination); s.start(0);
+      _audioUnlocked=true;
+    }catch(e){}
+  }
+}
+document.addEventListener("touchstart",unlockAudio,{passive:true});
+document.addEventListener("click",unlockAudio,{passive:true});
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) unlockAudio() });
 function tone(f,delay,dur,type,vol){
   const c=ac(); if(!c) return;
   const o=c.createOscillator(), g=c.createGain();
@@ -1294,7 +1325,13 @@ function tone(f,delay,dur,type,vol){
   o.start(t0); o.stop(t0+dur+.02);
 }
 function gBeep(kind){
-  if(!game.sound) return; const c=ac(); if(!c) return; if(c.state==="suspended") c.resume();
+  if(!game.sound) return;
+  const c=ac(); if(!c) return;
+  setAmbientSession();
+  if(c.state!=="running"){ c.resume().then(()=>playBeep(kind)).catch(()=>{}); return }
+  playBeep(kind);
+}
+function playBeep(kind){
   if(kind==="ok"){ tone(660,0,.12,"triangle",.16); tone(880,.09,.16,"triangle",.16) }
   else if(kind==="ng"){ tone(200,0,.22,"sawtooth",.12); tone(150,.08,.22,"sawtooth",.1) }
   else if(kind==="combo"){ tone(784,0,.1,"square",.12); tone(1047,.08,.14,"square",.12) }
@@ -1759,6 +1796,7 @@ function renderQ(){
   $("stamp").className="stamp";$("stamp").innerHTML="";
   const p=prog[qid];$("mark-btn").className="mark-fab"+(p&&p.mk?" on":"");$("mark-btn").style.display="flex";
   $("fb").classList.remove("show");$("ox-area").style.display="";
+  if(typeof syncSoundBtn==="function")syncSoundBtn();
   $("scr-quiz").classList.remove("peek");
   $("q-card").classList.remove("tappable");
   window.scrollTo(0,0);
@@ -1836,6 +1874,16 @@ function toggleMark(){
   $("mark-btn2").classList.toggle("on",!!p.mk);
   saveProg();
 }
+function syncSoundBtn(){
+  const b=$("snd-btn"); if(!b) return;
+  b.textContent=game.sound?"🔊":"🔇";
+  b.classList.toggle("off",!game.sound);
+}
+$("snd-btn").onclick=()=>{
+  game.sound=!game.sound; saveGame(); syncSoundBtn();
+  if(game.sound){ unlockAudio(); gBeep("ok") }
+  if(typeof renderSet==="function") renderSet();
+};
 $("mark-btn").onclick=toggleMark;
 $("q-card").addEventListener("click",()=>{ if(answered) $("scr-quiz").classList.toggle("peek"); });
 $("mark-btn2").onclick=toggleMark;
