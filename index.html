@@ -836,7 +836,10 @@ function renderToday(){
       const doneToday=PLAN.order[tr].map(id=>PLAN.tasks[id]).filter(t=>isDone(t)&&manualDate(t)===tStr);
       const bud=budgetFor(tStr,tr);
       html+=`<div class="sec-label">${TRACK_NAME[tr]}<span class="mins">目安 ${bud}分</span></div>`;
-      const list=[...doneToday, ...todays.filter(t=>!doneToday.includes(t))];
+      // 未完了を上、完了済みを下に
+      const undone=todays.filter(t=>!isDone(t));
+      const done=[...todays.filter(t=>isDone(t)&&!doneToday.includes(t)), ...doneToday];
+      const list=[...undone, ...done];
       if(!list.length){ html+=`<div class="empty">このトラックは完了、または今日の分なし</div>`; }
       list.forEach(t=>{ html+=taskCard(t,{todayMin:minOn(t,tStr)}) });
     });
