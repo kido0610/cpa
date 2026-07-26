@@ -1492,11 +1492,30 @@ let gSessCorrect=0;
 const SRS_INT=[1,3,7,16,35,60];
 function srsUpdate(qid,correct){
   if(!game.srs) game.srs={};
+  const p=prog[qid]||{};
+  const wrongHist=(p.x>0)||p.last==="x"||!correct;   // 不正解の履歴あり
+  const checked=!!p.mk;
+  const already=!!game.srs[qid];
+  // 復習対象は「不正解歴あり」または「チェック済」だけ。純粋な正解問題は登録しない
+  if(!wrongHist && !checked && !already) return;
   const s=game.srs[qid]||{box:0};
   s.box=correct?Math.min(s.box+1,SRS_INT.length-1):0;
   const d=new Date(); d.setDate(d.getDate()+SRS_INT[s.box]);
   s.due=fmtD(d);
   game.srs[qid]=s;
+}
+// チェックのON/OFFで復習対象を出し入れ（正解でも復習に載せる／外す）
+function srsSyncCheck(qid){
+  if(!game.srs) game.srs={};
+  const p=prog[qid]||{};
+  if(p.mk){
+    if(!game.srs[qid]){ const d=new Date(); d.setDate(d.getDate()+1);
+      game.srs[qid]={box:0,due:fmtD(d)} }
+  }else{
+    // チェックを外し、かつ不正解歴が無ければ復習対象から外す（正解問題の頻度を落とす）
+    const wrongHist=(p.x>0)||p.last==="x";
+    if(game.srs[qid] && !wrongHist) delete game.srs[qid];
+  }
 }
 function dueReviewQids(){
   if(!game.srs) return [];
@@ -2255,6 +2274,7 @@ function toggleMark(){
   p.mk=p.mk?0:1;
   $("mark-btn").classList.toggle("on",!!p.mk);
   $("mark-btn2").classList.toggle("on",!!p.mk);
+  if(typeof srsSyncCheck==="function"){ srsSyncCheck(qid); saveGame() }
   saveProg();
 }
 function syncSoundBtn(){
@@ -2295,6 +2315,15 @@ initSubjState();
         if(Array.isArray(sv.openCh))st.openCh=new Set(sv.openCh);
       }}
   }catch(e){}
+  // 既存データの移行: 純粋な正解問題(不正解歴なし・未チェック)を復習対象から外す
+  if(game.srs && !game._srsMigrated){
+    for(const qid in game.srs){
+      const p=prog[qid]||{};
+      const wrongHist=(p.x>0)||p.last==="x";
+      if(!wrongHist && !p.mk) delete game.srs[qid];
+    }
+    game._srsMigrated=true; saveGame();
+  }
   renderHome();
   takeSnap();
   renderAll();
